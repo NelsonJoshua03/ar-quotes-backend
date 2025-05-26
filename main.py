@@ -1,3 +1,6 @@
+from dotenv import load_dotenv  # <-- Add this line
+import os
+load_dotenv()
 from fastapi import FastAPI, HTTPException, Depends, status
 from pydantic import BaseModel
 from datetime import datetime, timedelta
@@ -8,7 +11,7 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 # --- Authentication Configuration ---
-SECRET_KEY = "your-secret-key-here"  # Change this in production!
+SECRET_KEY = os.getenv("SECRET_KEY")  # Change this in production!
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -26,7 +29,7 @@ app.add_middleware(
 )
 
 # --- Database Configuration ---
-DATABASE_URL = "postgresql://postgres:5674@localhost/ar_quotes"
+DATABASE_URL = "postgresql://ar_quotes_db_user:arKtDFpUyFVs8F3myKnvAoHKOj4Jo7FK@dpg-d0plviidbo4c738gbbq0-a.singapore-postgres.render.com/ar_quotes_db"
 pool = None
 
 # --- Pydantic Models ---
