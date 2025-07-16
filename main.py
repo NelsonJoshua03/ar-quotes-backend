@@ -1,5 +1,5 @@
-# This is a test comment to trigger a new commit
-from dotenv import load_dotenv  # <-- Add this line
+# Updated with security fixes and SSL correction
+from dotenv import load_dotenv
 import os
 load_dotenv()
 from fastapi import FastAPI, HTTPException, Depends, status
@@ -12,7 +12,10 @@ from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
 # --- Authentication Configuration ---
-SECRET_KEY = os.getenv("SECRET_KEY")  # Change this in production!
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set")
+    
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -30,7 +33,11 @@ app.add_middleware(
 )
 
 # --- Database Configuration ---
-DATABASE_URL = "postgresql://ar_quotes_db_user:arKtDFpUyFVs8F3myKnvAoHKOj4Jo7FK@dpg-d0plviidbo4c738gbbq0-a.singapore-postgres.render.com/ar_quotes_db?sslmode=require&ssl=true"
+# IMPORTANT: Use environment variables for security
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set")
+
 pool = None
 
 # --- Pydantic Models ---
@@ -61,7 +68,11 @@ class TokenData(BaseModel):
 @app.on_event("startup")
 async def startup():
     global pool
-    pool = await asyncpg.create_pool(DATABASE_URL)
+    # Connect using SSL without certificate file
+    pool = await asyncpg.create_pool(
+        dsn=DATABASE_URL,
+        ssl="require"  # Force SSL without local cert file
+    )
 
 # --- Authentication Utilities ---
 def verify_password(plain_password: str, hashed_password: str):
