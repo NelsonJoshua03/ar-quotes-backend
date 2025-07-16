@@ -30,7 +30,7 @@ app.add_middleware(
 )
 
 # --- Database Configuration ---
-DATABASE_URL = "postgresql://ar_quotes_db_user:arKtDFpUyFVs8F3myKnvAoHKOj4Jo7FK@dpg-d0plviidbo4c738gbbq0-a.singapore-postgres.render.com/ar_quotes_db"
+DATABASE_URL = ""postgresql://ar_quotes_db_user:arKtDFpUyFVs8F3myKnvAoHKOj4Jo7FK@dpg-d0plviidbo4c738gbbq0-a.singapore-postgres.render.com/ar_quotes_db?sslmode=require&sslrootcert=config""
 pool = None
 
 # --- Pydantic Models ---
