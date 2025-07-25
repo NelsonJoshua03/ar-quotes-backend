@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Clear pip cache
+python -m pip cache purge
 
-# Install Python dependencies
-python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
+# Force clean installation
+python -m pip install --upgrade pip
+pip install --no-cache-dir -r requirements.txt
