@@ -322,24 +322,43 @@ async def create_quote(
 @app.get("/quotes/nearby")
 async def get_nearby_quotes(lat: float, lon: float, distance: int = 100):
     """
-    Find quotes within approximate distance (in meters)
-    Note: 1 degree ≈ 111,000 meters
+    Find quotes within exact distance (in meters) using Haversine formula
     """
     try:
-        # Convert meters to approximate degrees
-        degree_distance = distance / 111000
-        
         async with pool.acquire() as conn:
+            # Use Haversine formula for accurate distance calculation
             quotes = await conn.fetch(
                 """
-                SELECT id, quote AS text, author, 
-                       latitude, longitude,
-                       radius, created_at
+                SELECT 
+                    id, 
+                    quote AS text, 
+                    author, 
+                    latitude, 
+                    longitude,
+                    radius, 
+                    created_at AS createdAt,
+                    id::text AS locationId,
+                    -- Calculate exact distance for potential client-side use
+                    6371000 * 2 * ASIN(
+                        SQRT(
+                            POWER(SIN(RADIANS(latitude - $1) / 2), 2) +
+                            COS(RADIANS($1)) * 
+                            COS(RADIANS(latitude)) *
+                            POWER(SIN(RADIANS(longitude - $2) / 2), 2)
+                        )
+                    ) AS distance_meters
                 FROM quotes
-                WHERE ABS(longitude - $1) <= $3
-                  AND ABS(latitude - $2) <= $3
+                WHERE 
+                    6371000 * 2 * ASIN(
+                        SQRT(
+                            POWER(SIN(RADIANS(latitude - $1) / 2), 2) +
+                            COS(RADIANS($1)) * 
+                            COS(RADIANS(latitude)) *
+                            POWER(SIN(RADIANS(longitude - $2) / 2), 2)
+                        )
+                    ) <= $3
                 """,
-                lon, lat, degree_distance
+                lat, lon, distance
             )
             return [dict(q) for q in quotes]
     except Exception as e:
