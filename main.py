@@ -82,6 +82,14 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class BookPageCreate(BaseModel):
+    left_text: str
+    right_text: str
+
+class BookPageResponse(BookPageCreate):
+    page_id: int
+    created_at: datetime
+
 # --- Database Initialization ---
 @app.on_event("startup")
 async def startup():
@@ -162,6 +170,18 @@ async def initialize_database():
             logger.info("Quotes table created")
         else:
             logger.info("Quotes table already exists")
+
+        if not book_pages_exists:
+            logger.info("Creating book_pages table...")
+            await conn.execute('''
+                CREATE TABLE book_pages (
+                    page_id SERIAL PRIMARY KEY,
+                    left_text TEXT NOT NULL,
+                    right_text TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            logger.info("book_pages table created")
         
         # Create index for location queries
         await conn.execute('''
@@ -413,3 +433,23 @@ async def env_check():
         "SECRET_KEY_set": bool(os.getenv("SECRET_KEY")),
         "database_ssl": "require" in DATABASE_URL.lower() if DATABASE_URL else False
     }
+
+@app.get("/book-page/{page_id}", response_model=BookPageResponse)
+async def get_book_page(page_id: int):
+    async with pool.acquire() as conn:
+        page = await conn.fetchrow(
+            "SELECT page_id, left_text, right_text, created_at FROM book_pages WHERE page_id = $1",
+            page_id
+        )
+        if not page:
+            raise HTTPException(status_code=404, detail="Page not found")
+        return dict(page)
+
+@app.post("/book-page", status_code=201)
+async def create_book_page(page: BookPageCreate, current_user: dict = Depends(get_current_user)):
+    async with pool.acquire() as conn:
+        new_page = await conn.fetchrow(
+            "INSERT INTO book_pages (left_text, right_text) VALUES ($1, $2) RETURNING page_id",
+            page.left_text, page.right_text
+        )
+        return {"page_id": new_page['page_id']}
